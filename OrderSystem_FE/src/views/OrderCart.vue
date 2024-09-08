@@ -1,13 +1,12 @@
 <script setup>
-// import { onMounted, ref } from 'vue';
-import { useStore } from 'vuex';
 import axios from 'axios'; 
-import { computed } from 'vue';
+//pinia의 값을 동적으로 변경해주기위해서 사용
+import { storeToRefs } from 'pinia';
+import { useCartStore } from '@/store/useCartStore.js';
 
+const piniaStore = useCartStore();
 
-const store = useStore();
-const getCartItems = computed(() => store.getters.getCartItems);
-const getTotalQuantity = computed(() => store.getters.getTotalQuantity);
+const { getCartItems, getTotalQuantity } = storeToRefs(piniaStore);
 
 const placeOrder = async () => {
     const orderItems = getCartItems.value.map(item =>{
@@ -28,7 +27,7 @@ const placeOrder = async () => {
         await axios.post(`${process.env.VUE_APP_API_BASE_URL}/order/create`, orderItems ,{headers});
         console.log(orderItems);
         alert("주문완료.");
-        this.$store.commit('clearCart');
+        clearCart();
     } catch(error){
         console.log(error);
         alert("주문이 실패되었습니다.");
@@ -36,8 +35,7 @@ const placeOrder = async () => {
 }
 
 const clearCart = () => {
-    const clearCart = () => store.dispatch("clearCart");
-    clearCart();
+    piniaStore.clearCart();
 }
 
 </script>

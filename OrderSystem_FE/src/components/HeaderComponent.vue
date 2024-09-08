@@ -1,9 +1,11 @@
 <script setup>
-import { computed, ref , onMounted } from 'vue';
-import { useStore } from 'vuex'
+import { ref , onMounted } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useCartStore } from '@/store/useCartStore.js';
 
-const store = useStore();
-const getTotalQuantity = computed(() => store.getters.getTotalQuantity);
+const piniaStore = useCartStore();
+
+const { getTotalQuantity } = storeToRefs(piniaStore);
 const isLogin = ref(false); 
 const userRole = ref();
 

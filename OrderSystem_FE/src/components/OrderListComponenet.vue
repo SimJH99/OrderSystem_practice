@@ -34,8 +34,8 @@ const cancelOrder = (async (orderId) => {
         try{
             const token = localStorage.getItem('token');
             const headers =  {Authorization : `Bearer ${token}`};
-            await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/${orderId}/cancel`, {headers});
-            const order = this.orderList.find(order => order.id === orderId);
+            await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/order/${orderId}/cancel`, {headers});
+            const order = orderList.value.find(order => order.id === orderId);
             order.orderStatus = "CANCELED";
         } catch(error){
             console.log(error);

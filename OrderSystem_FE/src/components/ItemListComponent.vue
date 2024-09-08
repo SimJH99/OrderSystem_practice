@@ -1,6 +1,10 @@
 <script setup>
 import axios from 'axios';
+import ApiService from '@/router/api.js'
+import { useCartStore } from '@/store/useCartStore.js';
 import { defineProps, ref, onMounted } from 'vue';
+
+const piniaStore = useCartStore();
 
 const props = defineProps({
     isAdmin: Boolean,
@@ -32,13 +36,13 @@ const loadItems = (async () => {
             params.catogory = searchValue.value;
         }
         console.log("data 호출")
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/items`, {params});
+        // const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/items`, {params});
+        const response = await ApiService(params);
         const addItemList = response.data.map(item=>({...item, quantity:1}))
         if(addItemList.length < pageSize.value){
             isLastPage.value = true;
         }
     itemList.value = itemList.value.concat(addItemList);
-    console.log(itemList.value);
     } catch(error){
         console.log(error)
     }
@@ -46,7 +50,7 @@ const loadItems = (async () => {
 
 const placeOrder = (async () => {
     const orderItems = Object.keys(selectedItems.value)
-                            .filter(key => selectedItems[key].value===true)
+                            .filter(key => selectedItems.value[key] === true)
                             .map(key => {
                                 const item = itemList.value.find(item => item.id == key);
                                 return {itemId:item.id, count:item.quantity};
@@ -55,7 +59,6 @@ const placeOrder = (async () => {
     const headers = token ? {Authorization : `Bearer ${token}`} : {};
     try{
         await axios.post(`${process.env.VUE_APP_API_BASE_URL}/order/create`, orderItems ,{headers});
-        console.log(orderItems);
         alert("주문완료.");
         window.location.reload();
     } catch(error){
@@ -99,13 +102,14 @@ const delteItem = (async (itemId) => {
 })
 
 const addCart = (()=> {
+    const addCartStore = (item) => piniaStore.addToCart(item);
     const orderItems = Object.keys(selectedItems.value)
-                            .filter(key => selectedItems[key].value === true)
+                            .filter(key => selectedItems.value[key] === true)
                             .map(key => {
                                 const item = itemList.value.find(item => item.id == key);
                                 return {itemId : item.id, name : item.name, count : item.quantity};
                             });
-    orderItems.forEach(item => this.$store.commit('addToCart', item));
+    orderItems.forEach(item => addCartStore(item));
 
     if(orderItems.length < 1){
         alert("주문대상 물건이 없습니다.")

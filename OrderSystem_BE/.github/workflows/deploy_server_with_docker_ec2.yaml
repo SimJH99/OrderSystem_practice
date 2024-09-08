@@ -1,0 +1,49 @@
+name: Deploy to EC2 With docker
+
+on:
+  push:
+    branches:
+    - main
+      
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build Docker Image
+      working-directory: ./ordering
+      run: docker build -t simjae/order_server:v2 .
+
+    - name: DockerHub Login
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Push Docker Image to DockerHub
+      run: docker push simjae/order_server:v2
+
+    - name: Ec2 ssh login and docker run
+      uses: appleboy/ssh-action@master
+      with: 
+        host: ${{ secrets.EC2_HOST1 }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        # type docker : docker명령어가 현재 시스템의 존재하는지를 확인
+        # > /dev/null : 명령어의 출력을 무시할 때 사용
+        script: |
+          if ! type docker > /dev/null ; then
+            curl -s https://get.docker.com -o get-docker.sh
+            sudo sh get-docker.sh
+          fi
+          sudo docker login --username ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }}
+
+          sudo docker pull simjae/order_server:v2
+          sudo docker rm -f order-backend || true
+
+          sudo docker run -d --name order-backend -p 80:8080 \
+          -e SPRING_DATASOURCE_URL=jdbc:mariadb://${{ secrets.DB_HOST }}:3306/ordering \
+          -e SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }} \
+          -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }} simjae/order_server:v2
+
